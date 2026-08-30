@@ -3,14 +3,19 @@ import './scss/styles.scss';
 import { BasketModel } from './components/Models/BasketModel';
 import { BuyerModel } from './components/Models/BuyerModel';
 import { CatalogModel } from './components/Models/CatalogModel'; 
-import { EventEmitter } from './components/base/Events';
+
+import { API_URL } from './utils/constants';
+import { Api } from './components/base/Api';
+import { Communication } from './components/services/Communication';
 import { apiProducts } from './utils/data';
 
-const events = new EventEmitter()
 //экземпляры моделей 
-const basket = new BasketModel(events); 
-const catalog = new CatalogModel(events);
-const buyer = new BuyerModel(events);
+const basket = new BasketModel(); 
+const catalog = new CatalogModel();
+const buyer = new BuyerModel();
+
+const baseApi = new Api(API_URL); 
+const api = new Communication(baseApi)
 
 //проверяем каталог 
 
@@ -36,11 +41,12 @@ console.log('Корзина после добавления двух товар�
 console.log('Количество товаров в корзине после добавления двух товаров', basket.getCountBasketItem())
 console.log('Стоимость товара после добавления', basket.getPrice());
 
+console.log('Есть ли первый товар в корзине (до удаления):', basket.hasProduct(product1.id));
 basket.removeItem(product1) 
 console.log('Корзина после удаления одного товара: ', basket.getBasketProduct())
 console.log('Количество товаров в корзине после удалния товара', basket.getCountBasketItem())
 console.log('Стоимость товара после удаления товара', basket.getPrice());
-
+console.log('Есть ли первый товар в корзине (после удаления):', basket.hasProduct(product1.id));
 
 basket.clearBasket()
 console.log('Корзина после полной очистки', basket.getBasketProduct())
@@ -59,4 +65,14 @@ console.log('Ошибки валидации (ожидаем пустой объ
 
 buyer.clearUsersData();
 console.log('Данные покупателя после очистки:', buyer.getUsersData());
+
+api.getProductList()
+    .then((data) => {
+        catalog.saveProductsList(data.items);
+        console.log('Данные каталога успешно загружены с сервера:');
+        console.log(catalog.getProductsList());
+    })
+    .catch((err) => {
+        console.error('Ошибка при получении данных с сервера:', err);
+    });
 

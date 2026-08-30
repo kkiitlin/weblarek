@@ -1,5 +1,4 @@
 import { IBuyer } from "../../types";
-import { IEvents } from "../base/Events";
 
 export type FormErrors = Partial<Record<keyof IBuyer, string>>
 
@@ -10,15 +9,9 @@ export class BuyerModel {
         phone: '',
         email: ''
     }
-    protected events: IEvents;
-
-    constructor(events: IEvents) {
-        this.events = events;
-    }
 
     saveData(data: Partial<IBuyer>): void {
     this.buyerData = { ...this.buyerData, ...data };
-    this.events.emit('buyer:change', this.getUsersData());
     }
 
     getUsersData(): IBuyer {
@@ -32,7 +25,6 @@ export class BuyerModel {
         phone: '',
         email: '',
         }
-        this.events.emit('buyer:change', this.getUsersData())
     }
 
     validate(): FormErrors {
