@@ -1,32 +1,37 @@
-import { IEvents } from "../base/Events";
 import { ensureElement } from "../../utils/utils";
-import { IProduct } from "../../types";
-import { Card, keyCategory } from "./Entity/Card";
+// Убираем импорт IEvents, добавляем ICardActions и ICard
+import { Card, keyCategory, ICardActions, ICard } from "./Entity/Card";
 import { categoryMap, CDN_URL } from "../../utils/constants";
 
-export class CardPreview extends Card<IProduct> {
+export interface ICardPreview extends ICard {
+    description?: string;
+    buttonText?: string;
+    buttonDisabled?: boolean;
+}
+
+export class CardPreview extends Card<ICardPreview> {
     protected cardCategory: HTMLElement;
     protected cardImage: HTMLImageElement;
     protected cardDescription: HTMLElement;
     protected cardButton: HTMLButtonElement;
-    
 
-    constructor(container: HTMLElement, protected events: IEvents){
-        super(container)
+    constructor(container: HTMLElement, actions?: ICardActions) {
+        super(container);
 
-        this.cardCategory = ensureElement<HTMLElement>('.card__category', this.container)
-        this.cardImage = ensureElement<HTMLImageElement>('.card__image', this.container)
-        this.cardDescription = ensureElement<HTMLElement>('.card__text', this.container)
-        this.cardButton = ensureElement<HTMLButtonElement>('.card__button', this.container)
+        this.cardCategory = ensureElement<HTMLElement>('.card__category', this.container);
+        this.cardImage = ensureElement<HTMLImageElement>('.card__image', this.container);
+        this.cardDescription = ensureElement<HTMLElement>('.card__text', this.container);
+        this.cardButton = ensureElement<HTMLButtonElement>('.card__button', this.container);
 
-        this.cardButton.addEventListener('click', () => {
-            this.events.emit('card__preview:click')
-        })
+        if (actions?.onClick) {
+            this.cardButton.addEventListener('click', actions.onClick);
+        }
     }
 
     set image(value: string) {
         this.cardImage.src = `${CDN_URL}/${value}`;
-        this.cardImage.alt = this.title
+
+        this.cardImage.alt = this.cardTitle.textContent || '';
     }
 
     set category(value: string) {
@@ -45,10 +50,10 @@ export class CardPreview extends Card<IProduct> {
     }
 
     set buttonText(value: string) {
-        this.cardButton.textContent = String(value)
-        this.cardButton.disabled = false;
-        if(value === 'Недоступно') {
-            this.cardButton.disabled = true
-        }
+        this.cardButton.textContent = String(value);
+    }
+
+    set buttonDisabled(value: boolean) {
+        this.cardButton.disabled = value;
     }
 }

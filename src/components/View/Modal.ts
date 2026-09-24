@@ -3,7 +3,7 @@ import { IEvents } from "../base/Events";
 import { Component } from "../base/Component";
 
 interface IModal {
-    content: HTMLElement
+    content: HTMLElement;
 }
 
 export class Modal extends Component<IModal> {
@@ -11,40 +11,37 @@ export class Modal extends Component<IModal> {
     protected closeButton: HTMLButtonElement;
 
     constructor(container: HTMLElement, protected events: IEvents) {
-        super(container)
+        super(container);
     
-        this.modalElem = ensureElement<HTMLElement>('.modal__content', this.container)
-        this.closeButton = ensureElement<HTMLButtonElement>('.modal__close', this.container)
+        this.modalElem = ensureElement<HTMLElement>('.modal__content', this.container);
+        this.closeButton = ensureElement<HTMLButtonElement>('.modal__close', this.container);
 
-        this.closeButton.addEventListener('click', () => {
-            this.closeWindow()
-            this.events.emit('modal:close')
-        })
-
-         document.addEventListener('keydown', (e) => {
-            if(this.container.classList.contains('modal_active') && e.key === 'Escape') {
-                this.closeWindow();
-                this.events.emit('modal:close');
-            }
-        });
-
+        // Убрали дублирующиеся слушатели. Вешаем закрытие окна на крестик и на оверлей
         this.closeButton.addEventListener('click', this.closeWindow.bind(this));
         this.container.addEventListener('click', this.closeWindow.bind(this));
-        this.modalElem.addEventListener('click', (event) =>
-            event.stopPropagation()
-        );
+        
+        // Предотвращаем закрытие при клике внутри самой карточки
+        this.modalElem.addEventListener('click', (event) => event.stopPropagation());
 
+        // Обработка клавиши Escape (вызываем только closeWindow)
+        document.addEventListener('keydown', (e) => {
+            if(this.container.classList.contains('modal_active') && e.key === 'Escape') {
+                this.closeWindow();
+            }
+        });
     }
 
     openWindow(): void {
-        this.container.classList.add('modal_active')
+        this.container.classList.add('modal_active');
     } 
 
     closeWindow(): void {
-        this.container.classList.remove('modal_active')
+        this.container.classList.remove('modal_active');
+        // Перенесли отправку события сюда, как просил ревьюер
+        this.events.emit('modal:close');
     }
 
-    set content(items: HTMLElement) {
-        this.modalElem.replaceChildren(items)
+    set content(value: HTMLElement) {
+        this.modalElem.replaceChildren(value);
     }
 }

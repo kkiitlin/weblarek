@@ -1,26 +1,26 @@
-import { IEvents } from "../base/Events";
-import { IProduct } from "../../types";
 import { ensureElement } from "../../utils/utils";
 import { CDN_URL, categoryMap } from "../../utils/constants";
-import { Card, keyCategory } from "./Entity/Card";
+import { Card, keyCategory, ICardActions } from "./Entity/Card";
+import { IProduct } from "../../types";
 
 export class CardCatalog extends Card<IProduct> {
     protected cardCategory: HTMLElement;
     protected cardImage: HTMLImageElement;
 
-    constructor(container: HTMLElement, protected events: IEvents) {
-        super(container)
-        this.cardCategory = ensureElement<HTMLElement>('.card__category', this.container)
-        this.cardImage = ensureElement<HTMLImageElement>('.card__image', this.container)
+    // Меняем тип параметра на ICardActions
+    constructor(container: HTMLElement, actions?: ICardActions) {
 
-        this.container.addEventListener('click', () => {
-            this.events.emit('card:click', {id: this.idCard})
-        })
+        super(container, actions); 
+        
+        this.cardCategory = ensureElement<HTMLElement>('.card__category', this.container);
+        this.cardImage = ensureElement<HTMLImageElement>('.card__image', this.container);
+
     }
 
     set image(value: string) { 
         this.cardImage.src = `${CDN_URL}/${value}`;
-        this.cardImage.alt = this.title
+
+        this.cardImage.alt = this.cardTitle.textContent || ''; 
     }
 
     set category(value: string) {
@@ -30,7 +30,7 @@ export class CardCatalog extends Card<IProduct> {
             this.cardCategory.classList.toggle(
                 categoryMap[key as keyCategory],
                 key === value
-            )
+            );
         }
     }
 }

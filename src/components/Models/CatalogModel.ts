@@ -1,4 +1,4 @@
-import {IProduct} from '../../types'
+import { IProduct } from '../../types';
 import { IEvents } from '../base/Events';
 
 export class CatalogModel {
@@ -9,7 +9,8 @@ export class CatalogModel {
 
     saveProductsList(productsList: IProduct[]): void {
         this.productsList = productsList;
-        this.events.emit('catalog:change')
+        // 1. Отправляем событие об изменении списка товаров
+        this.events.emit('catalog:change');
     } 
 
     getProductsList(): IProduct[] {
@@ -17,16 +18,16 @@ export class CatalogModel {
     }
 
     getIdProduct(id: string): IProduct | undefined {
-        return this.productsList.find((item) => item.id === id)
+        return this.productsList.find((item) => item.id === id);
     }
 
     saveChoosenProduct(product: IProduct): void {
         this.choosenProduct = product;
-        this.events.emit('catalog:change')
+        // 2. Отправляем событие о выборе конкретного товара
+        this.events.emit('catalog:change');
     }
 
     getChoosenProduct(): IProduct | null {
-        return this.choosenProduct
+        return this.choosenProduct;
     }
-
 }

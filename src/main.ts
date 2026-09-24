@@ -17,7 +17,7 @@ import { IBuyer, IOrder, IProduct } from './types';
 import { Header } from './components/View/Header';
 import { Gallery } from './components/View/Gallery';
 import { Modal } from './components/View/Modal';
-import { Succeess } from './components/View/Succeess'; // Исправлена опечатка в названии файла
+import { Succeess } from './components/View/Succeess'; 
 import { CardCatalog } from './components/View/CardCatalog';
 import { CardPreview } from './components/View/CardPreview';
 import { CardBasket } from './components/View/CardBasket'; 
@@ -53,119 +53,58 @@ const orderForm = new Order(cloneTemplate(orderTemplate), events);
 const contactsForm = new Contacts(cloneTemplate(contactsTemplate), events);
 const successView = new Succeess(cloneTemplate(successTemplate), events);
 
+const preview = new CardPreview(cloneTemplate(cardPreviewTemplate), {
+    onClick: () => events.emit('card__preview:click')
+});
+
 // --- 4. Обработчики событий (Слой Презентера) ---
 
-// Последний отрисованный список товаров.
-// Модель каталога сообщает об изменении и при выборе товара, поэтому галерею перерисовываем
-// только тогда, когда изменился сам список товаров, а не выбранная карточка
+// Переменная для разделения логики отрисовки каталога и модалки
 let renderedProducts: IProduct[] | null = null;
 
 /* Вспомогательные методы презентера */
-
-// Текст кнопки в превью товара
 function getPreviewButtonText(product: IProduct): string {
-    if (product.price === null) {
-        return 'Недоступно';
-    }
+    if (product.price === null) return 'Недоступно';
     return basket.hasProduct(product.id) ? 'Удалить из корзины' : 'Купить';
 }
 
-// Подсветка выбранного способа оплаты.
-// Поле address здесь не передаём, чтобы не затереть DOM-инпут, который лежит в свойстве address
-function syncPaymentState(): void {
-    const { payment } = buyer.getUsersData();
+/* Каталог - ВАРИАНТ БЕЗ ИЗМЕНЕНИЯ CatalogModel */
 
-    orderForm.render({
-        payment: payment === '' ? undefined : payment
-    });
-}
-
-// Ошибки в формах и доступность их кнопок (true — кнопка заблокирована)
-function updateFormsState(): void {
-    const errors = buyer.validate();
-
-    // способ оплаты мог измениться -> обновляем подсветку кнопок
-    syncPaymentState();
-
-    const orderErrors = [errors.payment, errors.address].filter(Boolean);
-    orderForm.error = orderErrors.join('; ');
-    orderForm.buttonStatus = orderErrors.length > 0;
-
-    const contactsErrors = [errors.email, errors.phone].filter(Boolean);
-    contactsForm.error = contactsErrors.join('; ');
-    contactsForm.buttonStatus = contactsErrors.length > 0;
-}
-
-// Подготовка формы заказа (способ оплаты и адрес) к показу
-function renderOrderForm(): HTMLElement {
-    const data = buyer.getUsersData();
-    const errors = buyer.validate();
-    const orderErrors = [errors.payment, errors.address].filter(Boolean);
-
-    // Способ оплаты подсвечиваем через render, а адрес ставим через свойство addressInput:
-    // передавать address в render нельзя, иначе затрём DOM-инпут, который лежит в свойстве address
-    syncPaymentState();
-    orderForm.addressInput = data.address;
-
-    // Ошибки показываем только после того, как пользователь начнёт вводить данные
-    orderForm.error = '';
-    orderForm.buttonStatus = orderErrors.length > 0;
-
-    return orderForm.render();
-}
-
-// Подготовка формы контактов (email и телефон) к показу
-function renderContactsForm(): HTMLElement {
-    const data = buyer.getUsersData();
-    const errors = buyer.validate();
-    const contactsErrors = [errors.email, errors.phone].filter(Boolean);
-
-    contactsForm.email = data.email;
-    contactsForm.phone = data.phone;
-
-    contactsForm.error = '';
-    contactsForm.buttonStatus = contactsErrors.length > 0;
-
-    return contactsForm.render();
-}
-
-/* Каталог */
-
-// Список товаров изменился -> выводим карточки в галерею
+// Единое событие, которое срабатывает и на список, и на клик по карточке
 events.on('catalog:change', () => {
     const products = catalog.getProductsList();
 
-    // Изменился только выбранный товар -> галерею перерисовывать не нужно
-    if (products === renderedProducts) return;
+    // 1. Если список товаров обновился (загрузили с сервера) -> рендерим галерею
+    if (products !== renderedProducts) {
+        renderedProducts = products;
+        
+        gallery.catalog = products.map((item) => {
+            const card = new CardCatalog(cloneTemplate(cardCatalogTemplate), {
+                onClick: () => events.emit('card:click', { id: item.id })
+            });
+            return card.render(item);
+        });
+    } 
+    // 2. Если список не менялся, значит произошел клик по карточке -> открываем превью
+    else {
+        const product = catalog.getChoosenProduct();
+        if (!product) return;
 
-    renderedProducts = products;
-    gallery.catalog = products.map((item) => {
-        const card = new CardCatalog(cloneTemplate(cardCatalogTemplate), events);
-        return card.render(item);
-    });
-});
+        preview.buttonText = getPreviewButtonText(product);
+        preview.buttonDisabled = product.price === null;
 
-// Клик по карточке каталога -> сохраняем товар как выбранный
-events.on('card:click', (data: { id: string }) => {
-    const product = catalog.getIdProduct(data.id);
-    if (product) {
-        catalog.saveChoosenProduct(product);
+        modal.content = preview.render(product);
+        modal.openWindow();
     }
 });
 
-// Выбранный товар изменился -> показываем превью в модальном окне
-events.on('catalog:change', () => {
-    const product = catalog.getChoosenProduct();
-    if (!product) return;
-
-    const preview = new CardPreview(cloneTemplate(cardPreviewTemplate), events);
-    preview.buttonText = getPreviewButtonText(product);
-
-    modal.content = preview.render(product);
-    modal.openWindow();
+events.on('card:click', (data: { id: string }) => {
+    const product = catalog.getIdProduct(data.id);
+    if (product) {
+        catalog.saveChoosenProduct(product); // Это вызовет 'catalog:change' еще раз
+    }
 });
 
-// Клик по кнопке в превью -> добавляем товар в корзину или удаляем его из корзины
 events.on('card__preview:click', () => {
     const product = catalog.getChoosenProduct();
     if (!product || product.price === null) return;
@@ -175,32 +114,35 @@ events.on('card__preview:click', () => {
     } else {
         basket.addProduct(product);
     }
-
     modal.closeWindow();
 });
 
 /* Корзина */
 
-// Содержимое корзины изменилось -> обновляем счётчик в шапке, список товаров и сумму
 events.on('basket:change', () => {
     header.counter = basket.getCountBasketItem();
 
-    basketView.basket = basket.getBasketProduct().map((item, index) => {
-        const card = new CardBasket(cloneTemplate(cardBasketTemplate), events);
+    const basketItems = basket.getBasketProduct().map((item, index) => {
+        const card = new CardBasket(cloneTemplate(cardBasketTemplate), {
+            onClick: () => events.emit('card__basket:remove', { id: item.id })
+        });
         const container = card.render(item);
-        card.index = index + 1; // порядковый номер товара в списке
+        card.index = index + 1;
         return container;
     });
+
+    basketView.basket = basketItems;
     basketView.total = basket.getPrice();
+
+    // Добавляем явное управление доступностью кнопки «Оформить» в зависимости от наличия товаров
+    basketView.buttonStatus = basket.getCountBasketItem() === 0;
 });
 
-// Клик по иконке корзины в шапке -> открываем корзину
 events.on('basket:open', () => {
     modal.content = basketView.render();
     modal.openWindow();
 });
 
-// Клик по иконке мусорки в корзине -> удаляем товар из корзины
 events.on('card__basket:remove', (data: { id: string }) => {
     const product = basket.getBasketProduct().find((item) => item.id === data.id);
     if (product) {
@@ -210,13 +152,11 @@ events.on('card__basket:remove', (data: { id: string }) => {
 
 /* Оформление заказа */
 
-// Клик по кнопке "Оформить" в корзине -> открываем форму заказа
 events.on('basket:success', () => {
-    modal.content = renderOrderForm();
+    modal.content = orderForm.render();
     modal.openWindow();
 });
 
-// Пользователь изменил данные в форме -> сохраняем их в модели покупателя
 events.on('form:change', (data: { field: keyof IBuyer; value: string }) => {
     switch (data.field) {
         case 'payment':
@@ -224,47 +164,39 @@ events.on('form:change', (data: { field: keyof IBuyer; value: string }) => {
                 buyer.saveData({ payment: data.value });
             }
             break;
-        case 'address':
-            buyer.saveData({ address: data.value });
-            break;
-        case 'email':
-            buyer.saveData({ email: data.value });
-            break;
-        case 'phone':
-            buyer.saveData({ phone: data.value });
-            break;
+        case 'address': buyer.saveData({ address: data.value }); break;
+        case 'email': buyer.saveData({ email: data.value }); break;
+        case 'phone': buyer.saveData({ phone: data.value }); break;
     }
 });
 
-// Данные покупателя изменились -> обновляем ошибки и состояние кнопок в формах
 events.on('buyer:change', () => {
-    updateFormsState();
-});
-
-// Клик по кнопке "Далее" в форме заказа -> переходим к форме контактов
-events.on('order:submit', () => {
-    const errors = buyer.validate();
-
-    // Пока в форме заказа есть ошибки, дальше не идём
-    if (errors.payment || errors.address) {
-        updateFormsState();
-        return;
-    }
-
-    modal.content = renderContactsForm();
-});
-
-// Клик по кнопке "Оплатить" в форме контактов -> отправляем заказ на сервер
-events.on('contacts:submit', () => {
     const data = buyer.getUsersData();
     const errors = buyer.validate();
 
-    // Пока в форме контактов есть ошибки, заказ не отправляем
-    if (errors.email || errors.phone || !data.payment || !data.address) {
-        updateFormsState();
-        return;
-    }
+    orderForm.render({
+        payment: data.payment === '' ? undefined : data.payment
+    });
+    orderForm.addressInput = data.address;
+    
+    const orderErrors = [errors.payment, errors.address].filter(Boolean);
+    orderForm.error = orderErrors.join('; ');
+    orderForm.buttonStatus = orderErrors.length > 0;
 
+    contactsForm.email = data.email;
+    contactsForm.phone = data.phone;
+
+    const contactsErrors = [errors.email, errors.phone].filter(Boolean);
+    contactsForm.error = contactsErrors.join('; ');
+    contactsForm.buttonStatus = contactsErrors.length > 0;
+});
+
+events.on('order:submit', () => {
+    modal.content = contactsForm.render();
+});
+
+events.on('contacts:submit', () => {
+    const data = buyer.getUsersData();
     const order: IOrder = {
         payment: data.payment,
         address: data.address,
@@ -275,34 +207,27 @@ events.on('contacts:submit', () => {
     };
 
     api.postData(order)
-        .then((result) => {
+        .then((result: any) => {
             basket.clearBasket();
             buyer.clearUsersData();
-
-            // Сервер возвращает итоговую сумму заказа
             successView.counter = result.total;
             modal.content = successView.render();
         })
-        .catch((err) => {
+        .catch((err: any) => {
             contactsForm.error = 'Не удалось оформить заказ, попробуйте ещё раз';
             console.error('Ошибка при оформлении заказа:', err);
         });
 });
 
-// Клик по кнопке в окне успешного заказа -> закрываем модальное окно
-// (имя события оставлено таким, каким его отправляет компонент Succeess)
 events.on('succeess:agree', () => {
     modal.closeWindow();
 });
 
 // --- 5. Запуск приложения ---
-
-// Загружаем список товаров с сервера
 api.getProductList()
-    .then((data) => {
+    .then((data: any) => {
         catalog.saveProductsList(data.items);
     })
-    .catch((err) => {
+    .catch((err: any) => {
         console.error('Ошибка при получении данных с сервера:', err);
     });
-

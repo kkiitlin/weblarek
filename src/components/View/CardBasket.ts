@@ -1,25 +1,25 @@
 import { ensureElement } from "../../utils/utils";
-import { Card } from "./Entity/Card";
+import { Card, ICardActions } from "./Entity/Card"; // Добавлен импорт ICardActions
 import { IProduct } from "../../types";
-import { IEvents } from "../base/Events";
 
 export class CardBasket extends Card<IProduct> {
     protected cardIndex: HTMLElement;
     protected buttonRemove: HTMLButtonElement;
 
-    constructor(container: HTMLElement, protected events: IEvents) {
+    // Заменяем IEvents на actions
+    constructor(container: HTMLElement, actions?: ICardActions) {
+
         super(container);
 
-        this.cardIndex = ensureElement<HTMLElement>('.basket__item-index', this.container)
-        this.buttonRemove = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container)
+        this.cardIndex = ensureElement<HTMLElement>('.basket__item-index', this.container);
+        this.buttonRemove = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
 
-        this.buttonRemove.addEventListener('click', () => {
-            this.events.emit('card__basket:remove', {id: this.idCard})
-        })
+        if (actions?.onClick) {
+            this.buttonRemove.addEventListener('click', actions.onClick);
+        }
     }
 
     set index(value: number) {
-        this.cardIndex.textContent = String(value)
-
+        this.cardIndex.textContent = String(value);
     }
 }
