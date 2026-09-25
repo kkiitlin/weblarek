@@ -1,12 +1,11 @@
 import { ensureElement } from "../../utils/utils";
-import { Card, ICardActions } from "./Entity/Card"; // Добавлен импорт ICardActions
+import { Card, ICardActions } from "./Entity/Card"; 
 import { IProduct } from "../../types";
 
 export class CardBasket extends Card<IProduct> {
     protected cardIndex: HTMLElement;
     protected buttonRemove: HTMLButtonElement;
 
-    // Заменяем IEvents на actions
     constructor(container: HTMLElement, actions?: ICardActions) {
 
         super(container);

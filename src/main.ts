@@ -59,49 +59,39 @@ const preview = new CardPreview(cloneTemplate(cardPreviewTemplate), {
 
 // --- 4. Обработчики событий (Слой Презентера) ---
 
-// Переменная для разделения логики отрисовки каталога и модалки
-let renderedProducts: IProduct[] | null = null;
-
-/* Вспомогательные методы презентера */
 function getPreviewButtonText(product: IProduct): string {
     if (product.price === null) return 'Недоступно';
     return basket.hasProduct(product.id) ? 'Удалить из корзины' : 'Купить';
 }
 
-/* Каталог - ВАРИАНТ БЕЗ ИЗМЕНЕНИЯ CatalogModel */
+/* Каталог */
 
-// Единое событие, которое срабатывает и на список, и на клик по карточке
 events.on('catalog:change', () => {
     const products = catalog.getProductsList();
 
-    // 1. Если список товаров обновился (загрузили с сервера) -> рендерим галерею
-    if (products !== renderedProducts) {
-        renderedProducts = products;
-        
-        gallery.catalog = products.map((item) => {
-            const card = new CardCatalog(cloneTemplate(cardCatalogTemplate), {
-                onClick: () => events.emit('card:click', { id: item.id })
-            });
-            return card.render(item);
+    gallery.catalog = products.map((item) => {
+        const card = new CardCatalog(cloneTemplate(cardCatalogTemplate), {
+            onClick: () => events.emit('card:click', { id: item.id })
         });
-    } 
-    // 2. Если список не менялся, значит произошел клик по карточке -> открываем превью
-    else {
-        const product = catalog.getChoosenProduct();
-        if (!product) return;
+        return card.render(item);
+    });
+});
 
-        preview.buttonText = getPreviewButtonText(product);
-        preview.buttonDisabled = product.price === null;
+events.on('product:select', () => {
+    const product = catalog.getChoosenProduct();
+    if (!product) return;
 
-        modal.content = preview.render(product);
-        modal.openWindow();
-    }
+    preview.buttonText = getPreviewButtonText(product);
+    preview.buttonDisabled = product.price === null;
+
+    modal.content = preview.render(product);
+    modal.openWindow();
 });
 
 events.on('card:click', (data: { id: string }) => {
     const product = catalog.getIdProduct(data.id);
     if (product) {
-        catalog.saveChoosenProduct(product); // Это вызовет 'catalog:change' еще раз
+        catalog.saveChoosenProduct(product); 
     }
 });
 
@@ -134,7 +124,6 @@ events.on('basket:change', () => {
     basketView.basket = basketItems;
     basketView.total = basket.getPrice();
 
-    // Добавляем явное управление доступностью кнопки «Оформить» в зависимости от наличия товаров
     basketView.buttonStatus = basket.getCountBasketItem() === 0;
 });
 

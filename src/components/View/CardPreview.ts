@@ -1,5 +1,4 @@
 import { ensureElement } from "../../utils/utils";
-// Убираем импорт IEvents, добавляем ICardActions и ICard
 import { Card, keyCategory, ICardActions, ICard } from "./Entity/Card";
 import { categoryMap, CDN_URL } from "../../utils/constants";
 

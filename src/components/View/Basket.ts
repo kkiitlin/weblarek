@@ -3,8 +3,8 @@ import { ensureElement } from "../../utils/utils";
 import { Component } from "../base/Component";
 
 export interface IBasket {
-    basket: HTMLElement[]; // Исправлено на массив
-    total: number;         // Исправлено с sum на total
+    basket: HTMLElement[];
+    total: number;        
 }
 
 export class Basket extends Component<IBasket> {
@@ -23,7 +23,6 @@ export class Basket extends Component<IBasket> {
             this.events.emit('basket:success');
         });
 
-        // Пока в корзине нет товаров, кнопка «Оформить» неактивна
         this.buttonStatus = true;
     }
 
@@ -36,7 +35,7 @@ export class Basket extends Component<IBasket> {
             const description = document.createElement('p'); 
             description.textContent = 'Корзина пуста';
             this.basketList.replaceChildren(description);
-            this.buttonStatus = true; // Используем собственный сеттер
+            this.buttonStatus = true; 
         } else {
             this.basketList.replaceChildren(...items);
             this.buttonStatus = false;

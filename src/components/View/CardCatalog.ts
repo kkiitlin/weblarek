@@ -7,7 +7,6 @@ export class CardCatalog extends Card<IProduct> {
     protected cardCategory: HTMLElement;
     protected cardImage: HTMLImageElement;
 
-    // Меняем тип параметра на ICardActions
     constructor(container: HTMLElement, actions?: ICardActions) {
 
         super(container, actions); 

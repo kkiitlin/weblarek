@@ -9,7 +9,6 @@ export interface ICard extends Partial<IProduct> {
     index?: number;
 }
 
-// 1. Добавляем интерфейс для колбэков
 export interface ICardActions {
     onClick: (event: MouseEvent) => void;
 }
@@ -18,7 +17,6 @@ export abstract class Card<T extends ICard> extends Component<T> {
     protected cardTitle: HTMLElement;
     protected cardPrice: HTMLElement;
 
-    // 2. Добавляем actions в конструктор
     constructor(container: HTMLElement, actions?: ICardActions) {
         super(container);
         this.cardTitle = ensureElement<HTMLElement>('.card__title', this.container);

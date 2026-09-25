@@ -9,7 +9,6 @@ export class CatalogModel {
 
     saveProductsList(productsList: IProduct[]): void {
         this.productsList = productsList;
-        // 1. Отправляем событие об изменении списка товаров
         this.events.emit('catalog:change');
     } 
 
@@ -23,8 +22,7 @@ export class CatalogModel {
 
     saveChoosenProduct(product: IProduct): void {
         this.choosenProduct = product;
-        // 2. Отправляем событие о выборе конкретного товара
-        this.events.emit('catalog:change');
+        this.events.emit('product:select');
     }
 
     getChoosenProduct(): IProduct | null {
